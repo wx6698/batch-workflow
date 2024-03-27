@@ -182,99 +182,117 @@ def update_jobs(job_ids, attribute, new_value):
 
 
 
-def update_node(job_ids, policy_id, attribute, new_value):
+def update_node(job_id, policy_id, attribute, new_value):
   jobs_spec = []
   new_jobs_spec = []
-  for job_id in job_ids:
-    job_spec = get_job_spec(job_id)
-    vals = list(find_vals(job_spec, 'policy_id'))
-    if (vals):
-      try:
-        if(job_spec['settings']['job_clusters'][0]['new_cluster']['policy_id']==policy_id):
-          print (job_id)
-          vals_driver = list(find_vals(job_spec, attribute))
-          if (vals-driver):
-            print(job_spec['settings']['job_clusters'][0]['new_cluster'][attribute])
-            new_job_spec = change_vals(job_spec, attribute, new_value)
-            new_jobs_spec.append(new_job_spec)
-            if DEBUG:
-              print('DEBUG: Job ID: ', job_id)
-              print(new_job_spec)
-              recursive_compare(job_spec, new_job_spec)
-            if DRY_RUN:
-              print('INFO: [Dry-run] Changes to job', job_id)
-              #recursive_compare(job_spec, new_job_spec)
-            else:
-              updated = update_job_spec(job_id, new_job_spec)
-              if updated.status_code != 200:
-                print('ERROR: Updating job', job_id, updated.content)
-              else:
-                print('INFO: Updated job', job_id)
+  job_spec = get_job_spec(job_id)
+  vals = list(find_vals(job_spec, 'policy_id'))
+  if (vals):
+    try:
+      if(job_spec['settings']['job_clusters'][0]['new_cluster']['policy_id']==policy_id):
+        print (job_id)
+        vals_driver = list(find_vals(job_spec, attribute))
+        if (vals-driver):
+          print(job_spec['settings']['job_clusters'][0]['new_cluster'][attribute])
+          new_job_spec = change_vals(job_spec, attribute, new_value)
+          new_jobs_spec.append(new_job_spec)
+          if DEBUG:
+            print('DEBUG: Job ID: ', job_id)
+            print(new_job_spec)
+            recursive_compare(job_spec, new_job_spec)
+          if DRY_RUN:
+            print('INFO: [Dry-run] Changes to job', job_id)
+            #recursive_compare(job_spec, new_job_spec)
           else:
-            print(job_spec['settings']['job_clusters'][0]['new_cluster']['node_type_id'])
-            new_job_spec = change_vals(job_spec, 'node_type_id', new_value)
-            new_jobs_spec.append(new_job_spec)
-            if DEBUG:
-              print('DEBUG: Job ID: ', job_id)
-              print(new_job_spec)
-              recursive_compare(job_spec, new_job_spec)
-            if DRY_RUN:
-              print('INFO: [Dry-run] Changes to job', job_id)
-              #recursive_compare(job_spec, new_job_spec)
+            updated = update_job_spec(job_id, new_job_spec)
+            if updated.status_code != 200:
+              print('ERROR: Updating job', job_id, updated.content)
             else:
-              updated = update_job_spec(job_id, new_job_spec)
-              if updated.status_code != 200:
-                print('ERROR: Updating job', job_id, updated.content)
-              else:
-                print('INFO: Updated job', job_id)
+              print('INFO: Updated job', job_id)
+        else:
+          print(job_spec['settings']['job_clusters'][0]['new_cluster']['node_type_id'])
+          new_job_spec = change_vals(job_spec, 'node_type_id', new_value)
+          new_jobs_spec.append(new_job_spec)
+          if DEBUG:
+            print('DEBUG: Job ID: ', job_id)
+            print(new_job_spec)
+            recursive_compare(job_spec, new_job_spec)
+          if DRY_RUN:
+            print('INFO: [Dry-run] Changes to job', job_id)
+            #recursive_compare(job_spec, new_job_spec)
+          else:
+            updated = update_job_spec(job_id, new_job_spec)
+            if updated.status_code != 200:
+              print('ERROR: Updating job', job_id, updated.content)
+            else:
+              print('INFO: Updated job', job_id)
 
-      except NameError:
-        print(job_spec)
-        pass
-      except:
-        #print (job_spec)
-        if(job_spec['settings']['tasks'][0]['new_cluster']['policy_id']==policy_id):
-          print (job_id)
-          vals_driver = list(find_vals(job_spec, attribute))
-          if (vals-driver):
-            print(job_spec['settings']['job_clusters'][0]['new_cluster'][attribute])
-            new_job_spec = change_vals(job_spec, attribute, new_value)
-            new_jobs_spec.append(new_job_spec)
-            if DEBUG:
-              print('DEBUG: Job ID: ', job_id)
-              print(new_job_spec)
-              recursive_compare(job_spec, new_job_spec)
-            if DRY_RUN:
-              print('INFO: [Dry-run] Changes to job', job_id)
-              #recursive_compare(job_spec, new_job_spec)
-            else:
-              updated = update_job_spec(job_id, new_job_spec)
-              if updated.status_code != 200:
-                print('ERROR: Updating job', job_id, updated.content)
-              else:
-                print('INFO: Updated job', job_id)
+    except NameError:
+      print(job_spec)
+      pass
+    except:
+      #print (job_spec)
+      if(job_spec['settings']['tasks'][0]['new_cluster']['policy_id']==policy_id):
+        print (job_id)
+        vals_driver = list(find_vals(job_spec, attribute))
+        if (vals-driver):
+          print(job_spec['settings']['job_clusters'][0]['new_cluster'][attribute])
+          new_job_spec = change_vals(job_spec, attribute, new_value)
+          new_jobs_spec.append(new_job_spec)
+          if DEBUG:
+            print('DEBUG: Job ID: ', job_id)
+            print(new_job_spec)
+            recursive_compare(job_spec, new_job_spec)
+          if DRY_RUN:
+            print('INFO: [Dry-run] Changes to job', job_id)
+            #recursive_compare(job_spec, new_job_spec)
           else:
-            print(job_spec['settings']['job_clusters'][0]['new_cluster']['node_type_id'])
-            new_job_spec = change_vals(job_spec, 'node_type_id', new_value)
-            new_jobs_spec.append(new_job_spec)
-            if DEBUG:
-              print('DEBUG: Job ID: ', job_id)
-              print(new_job_spec)
-              recursive_compare(job_spec, new_job_spec)
-            if DRY_RUN:
-              print('INFO: [Dry-run] Changes to job', job_id)
-              #recursive_compare(job_spec, new_job_spec)
+            updated = update_job_spec(job_id, new_job_spec)
+            if updated.status_code != 200:
+              print('ERROR: Updating job', job_id, updated.content)
             else:
-              updated = update_job_spec(job_id, new_job_spec)
-              if updated.status_code != 200:
-                print('ERROR: Updating job', job_id, updated.content)
-              else:
-                print('INFO: Updated job', job_id)
+              print('INFO: Updated job', job_id)
+        else:
+          print(job_spec['settings']['job_clusters'][0]['new_cluster']['node_type_id'])
+          new_job_spec = change_vals(job_spec, 'node_type_id', new_value)
+          new_jobs_spec.append(new_job_spec)
+          if DEBUG:
+            print('DEBUG: Job ID: ', job_id)
+            print(new_job_spec)
+            recursive_compare(job_spec, new_job_spec)
+          if DRY_RUN:
+            print('INFO: [Dry-run] Changes to job', job_id)
+            #recursive_compare(job_spec, new_job_spec)
+          else:
+            updated = update_job_spec(job_id, new_job_spec)
+            if updated.status_code != 200:
+              print('ERROR: Updating job', job_id, updated.content)
+            else:
+              print('INFO: Updated job', job_id)
 
 # COMMAND ----------
 
-job_ids = get_job_ids()
-update_node(job_ids, policy_id, attribute, value)
+from concurrent.futures import ThreadPoolExecutor
+from time import sleep, time
+from tqdm import tqdm
+
+
+num_cpu = 3
+if __name__ == "__main__":  
+    # Define a thread pool with 3 workers
+    job_ids = get_job_ids()
+    l = len(job_ids)
+    with tqdm(total=l) as pbar:
+      with ThreadPoolExecutor(max_workers=num_cpu) as executor:
+        futures = []
+        #start = time()
+        for job_id in job_ids:
+          args = [job_id, policy_id, attribute, value]
+          futures.append(executor.submit(update_node, *args))
+        for future in futures:
+          result = future.result()
+          pbar.update(1)
+
 
 # COMMAND ----------
 
