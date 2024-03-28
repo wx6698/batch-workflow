@@ -1,4 +1,8 @@
 # Databricks notebook source
+# MAGIC %pip install tqdm
+
+# COMMAND ----------
+
 dbutils.widgets.text("policy_id","required")
 dbutils.widgets.text("attribute","required")
 dbutils.widgets.text("value","required")

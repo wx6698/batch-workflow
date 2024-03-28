@@ -66,6 +66,8 @@ def get_job_ids():
             response_length += len(response.json()["jobs"])
     except requests.exceptions.RequestException:
         pass
+    if DEBUG:
+        print(response_length)
     return job_ids
 
 
@@ -99,7 +101,7 @@ def find_vals(job_spec, conf_key):
 
 def change_vals(job_spec, conf_key, new_val):
     vals = list(find_vals(job_spec, conf_key))
-    print("the new desired value is: " , vals)
+    print("the new desired value is: " + vals)
     if vals:
         old_val = vals[0]
         job_spec_str = json.dumps(job_spec)
@@ -143,9 +145,7 @@ def update_jobs(job_id, attribute, new_value):
     new_jobs_spec = []
     job_spec = get_job_spec(job_id)
     jobs_spec.append(job_spec)
-    
-    vals = list(find_vals(job_spec, attribute))
-    if (vals):          
+    try:        
         new_job_spec = change_vals(job_spec, attribute, new_value)
         new_jobs_spec.append(new_job_spec)
         if DEBUG:
@@ -157,13 +157,53 @@ def update_jobs(job_id, attribute, new_value):
             recursive_compare(job_spec, new_job_spec)
         else:
             updated = update_job_spec(job_id, new_job_spec)
+            print (new_job_spect)
             if updated.status_code != 200:
                 print('ERROR: Updating job', job_id, updated.text())
             else:
                 print('INFO: Updated job', job_id)
-    # except:
-    #     print("job id:",job_id,"failed to process")
-    #     #print(job_spec)
+    except NameError:
+        print(job_spec)
+        pass
+    except:
+        print (job_spec)
+        if(job_spec['settings']['tasks'][0]['new_cluster']['policy_id']==policy_id):
+            print (job_id)
+            vals_driver = list(find_vals(job_spec, attribute))
+            if (vals-driver):
+                print(job_spec['settings']['job_clusters'][0]['new_cluster'][attribute])
+                new_job_spec = change_vals(job_spec, attribute, new_value)
+                new_jobs_spec.append(new_job_spec)
+                if DEBUG:
+                    print('DEBUG: Job ID: ', job_id)
+                    print(new_job_spec)
+                    recursive_compare(job_spec, new_job_spec)
+                if DRY_RUN:
+                    print('INFO: [Dry-run] Changes to job', job_id)
+                    #recursive_compare(job_spec, new_job_spec)
+                else:
+                    updated = update_job_spec(job_id, new_job_spec)
+                    if updated.status_code != 200:
+                        print('ERROR: Updating job', job_id, updated.content)
+                    else:
+                        print('INFO: Updated job', job_id)
+            else:
+                print(job_spec['settings']['job_clusters'][0]['new_cluster']['node_type_id'])
+                new_job_spec = change_vals(job_spec, 'node_type_id', new_value)
+                new_jobs_spec.append(new_job_spec)
+                if DEBUG:
+                    print('DEBUG: Job ID: ', job_id)
+                    print(new_job_spec)
+                    recursive_compare(job_spec, new_job_spec)
+                    if DRY_RUN:
+                        print('INFO: [Dry-run] Changes to job', job_id)
+                    #recursive_compare(job_spec, new_job_spec)
+                else:
+                    updated = update_job_spec(job_id, new_job_spec)
+                    if updated.status_code != 200:
+                        print('ERROR: Updating job', job_id, updated.content)
+                    else:
+                        print('INFO: Updated job', job_id)
 
 # COMMAND ----------
 
