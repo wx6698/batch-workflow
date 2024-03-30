@@ -99,6 +99,18 @@ def find_vals(job_spec, conf_key):
             for x in find_vals(j, conf_key):
                 yield x
 
+
+def replace_nested_key(data, key, value):
+    if isinstance(data, dict):
+        return {
+            k: value if k == key else replace_nested_key(v, key, value)
+            for k, v in data.items()
+        }
+    elif isinstance(data, list):
+        return [replace_nested_key(v, key, value) for v in data]
+    else:
+        return data
+
 def change_vals(job_spec, conf_key, new_val, old_val):
     vals = list(find_vals(job_spec, conf_key))
     if vals: 
@@ -170,6 +182,15 @@ def update_jobs(job_id, attribute, new_value,old_val):
     # except:
     #     print("job id:",job_id,"failed to process")
     #     #print(job_spec)
+
+# COMMAND ----------
+
+# job_spec = get_job_spec('251897619430212')
+# vals = list(find_vals(job_spec, attribute))
+# if old_value in vals[0]:
+#     print("find",vals)
+# else:
+#     print(vals)
 
 # COMMAND ----------
 

@@ -1,15 +1,11 @@
 # Databricks notebook source
 # MAGIC %pip install tqdm
-# MAGIC
-
-# COMMAND ----------
-
-dbutils.library.restartPython()
 
 # COMMAND ----------
 
 dbutils.widgets.text("policy_id","required")
-dbutils.widgets.text("storage","required")
+dbutils.widgets.text("attribute","required")
+dbutils.widgets.text("value","required")
 dbutils.widgets.dropdown("DEBUG","True", ["True", "False"])
 dbutils.widgets.dropdown("DRY_RUN","True", ["True", "False"])
 
@@ -17,7 +13,8 @@ dbutils.widgets.dropdown("DRY_RUN","True", ["True", "False"])
 # COMMAND ----------
 
 policy_id=dbutils.widgets.get("policy_id")
-storage=dbutils.widgets.get("storage")
+attribute=dbutils.widgets.get("attribute")
+value=dbutils.widgets.get("value")
 DEBUG=dbutils.widgets.get("DEBUG")
 DRY_RUN=dbutils.widgets.get("DRY_RUN")
 
@@ -25,8 +22,6 @@ DRY_RUN=dbutils.widgets.get("DRY_RUN")
 
 import requests
 import json
-from concurrent.futures import ThreadPoolExecutor
-
 
 API_URL = dbutils.notebook.entry_point.getDbutils().notebook().getContext().apiUrl().getOrElse(None)
 API_TOKEN = dbutils.notebook.entry_point.getDbutils().notebook().getContext().apiToken().getOrElse(None)
@@ -49,22 +44,25 @@ else :
 
 # COMMAND ----------
 
+print (DRY_RUN)
+
+# COMMAND ----------
+
 def get_job_ids():
     session = requests.Session()
     api_url = f"{API_URL}/api/2.1/jobs/list"
-    api_params = { "limit": 20, "offset": 0 }
+    api_params = { "limit": 10, "offset": 0 }
     
     try:
         response = session.get(api_url, headers=AUTH_HEADER, params=api_params)
         #response_data = response.json()["jobs"]
         job_ids = []
-        #response.json()["jobs"]
         for job_id in response.json()["jobs"]:
+            #print(job_id["job_id"])
             job_ids.append(job_id["job_id"])
         response_length = len(response.json()["jobs"])
         while response.json()["has_more"]:
-            next_page_token = response.json()["next_page_token"]
-            api_params = { "page_token":{next_page_token}}
+            api_params["offset"] += 10
             response = session.get(api_url, headers=AUTH_HEADER, params=api_params)
             for job_id in response.json()["jobs"]:
                 #print(job_id["job_id"])
@@ -106,15 +104,13 @@ def find_vals(job_spec, conf_key):
             for x in find_vals(j, conf_key):
                 yield x
 
-def change_vals(job_spec, conf_key, new_conf_key):
+def change_vals(job_spec, conf_key, new_val):
     vals = list(find_vals(job_spec, conf_key))
-    print("in change_vals")
-    print (vals)
+    print(vals)
     if vals:
         old_val = vals[0]
         job_spec_str = json.dumps(job_spec)
-        job_spec_str = job_spec_str.replace(str(conf_key), str(new_conf_key))
-        print (new_conf_key)
+        job_spec_str = job_spec_str.replace(str(old_val), str(new_val))
         return json.loads(job_spec_str)
     else:
         if DEBUG:
@@ -149,13 +145,13 @@ def recursive_compare(d1, d2, level='root'):
         if d1 != d2:
             print('{:<20} {} != {}'.format(level, d1, d2))
 
-def update_jobs(job_ids, attribute, new_attribute):
+def update_jobs(job_ids, attribute, new_value):
     jobs_spec = []
     new_jobs_spec = []
     for job_id in job_ids:
         job_spec = get_job_spec(job_id)
         jobs_spec.append(job_spec)        
-        new_job_spec = change_vals(job_spec, attribute, new_attribute)
+        new_job_spec = change_vals(job_spec, attribute, new_value)
         new_jobs_spec.append(new_job_spec)
         if DEBUG:
             print('DEBUG: Job ID: ', job_id)
@@ -174,17 +170,6 @@ def update_jobs(job_ids, attribute, new_attribute):
             if DEBUG:
                 print('DEBUG: Updating job', updated.text())
 
-def gen_storage_conf_v1 (name):
-    conf_spec = []
-    auth= f"fs.azure.account.auth.type.{name}.dfs.core.windows.net" 
-    provider = f"fs.azure.account.oauth.provider.type.{name}.dfs.core.windows.net"
-    id = f"fs.azure.account.oauth2.client.id.{name}.dfs.core.windows.net"
-    secret = f"fs.azure.account.oauth2.client.secret.{name}.dfs.core.windows.net"
-    endpoint = f"fs.azure.account.oauth2.client.endpoint.{name}.dfs.core.windows.net"
-    conf_spec = [auth,provider,id,secret,endpoint]
-    return conf_spec
-
-
 # COMMAND ----------
 
 # vals = list(find_vals(job_spec, conf_key))
@@ -201,7 +186,7 @@ def gen_storage_conf_v1 (name):
 
 
 
-def update_node(job_id,policy_id, attribute, new_attribute):
+def update_node(job_id, policy_id, attribute, new_value):
   jobs_spec = []
   new_jobs_spec = []
   job_spec = get_job_spec(job_id)
@@ -209,12 +194,52 @@ def update_node(job_id,policy_id, attribute, new_attribute):
   if (vals):
     try:
       if(job_spec['settings']['job_clusters'][0]['new_cluster']['policy_id']==policy_id):
-        print (job_id)
         vals_driver = list(find_vals(job_spec, attribute))
         if (vals_driver):
-          print("find it")
-          #print(job_spec['settings']['job_clusters'][0]['new_cluster']['spark_conf'][attribute])
-          new_job_spec = change_vals(job_spec, attribute, new_attribute)
+          new_job_spec = change_vals(job_spec, attribute, new_value)
+          new_jobs_spec.append(new_job_spec)
+          if DEBUG:
+            print('DEBUG: Job ID: ', job_id)
+            print(new_job_spec)
+            recursive_compare(job_spec, new_job_spec)
+          if DRY_RUN:
+            print('INFO: [Dry-run] Changes to job', job_id)
+            #recursive_compare(job_spec, new_job_spec)
+          else:
+            updated = update_job_spec(job_id, new_job_spec)
+            if updated.status_code != 200:
+              print('ERROR: Updating job', job_id, updated.content)
+            else:
+              print('INFO: Updated job', job_id)
+        else:
+          print(job_spec['settings']['job_clusters'][0]['new_cluster']['node_type_id'])
+          new_job_spec = change_vals(job_spec, 'node_type_id', new_value)
+          new_jobs_spec.append(new_job_spec)
+          if DEBUG:
+            print('DEBUG: Job ID: ', job_id)
+            print(new_job_spec)
+            recursive_compare(job_spec, new_job_spec)
+          if DRY_RUN:
+            print('INFO: [Dry-run] Changes to job', job_id)
+            #recursive_compare(job_spec, new_job_spec)
+          else:
+            updated = update_job_spec(job_id, new_job_spec)
+            if updated.status_code != 200:
+              print('ERROR: Updating job', job_id, updated.content)
+            else:
+              print('INFO: Updated job', job_id)
+
+    except NameError as error:
+      print(error,"on:",job_spec)
+      pass
+    except:
+      #print (job_spec)
+      if(job_spec['settings']['tasks'][0]['new_cluster']['policy_id']==policy_id):
+        print (job_id)
+        vals_driver = list(find_vals(job_spec, attribute))
+        if (vals-driver):
+          print(job_spec['settings']['job_clusters'][0]['new_cluster'][attribute])
+          new_job_spec = change_vals(job_spec, attribute, new_value)
           new_jobs_spec.append(new_job_spec)
           if DEBUG:
             print('DEBUG: Job ID: ', job_id)
@@ -230,20 +255,8 @@ def update_node(job_id,policy_id, attribute, new_attribute):
             else:
               print('INFO: Updated job', job_id)
         else:
-          print("do not find it")
-
-    except NameError:
-      print(job_spec)
-      pass
-    except:
-      #print (job_spec)
-      if(job_spec['settings']['tasks'][0]['new_cluster']['policy_id']==policy_id):
-        print (job_id)
-        vals = list(find_vals(job_spec, attribute))
-        if (vals):
-          print(vals)
-          print(job_spec['settings']['job_clusters'][0]['new_cluster'][attribute])
-          new_job_spec = change_vals(job_spec, attribute, new_attribute)
+          print(job_spec['settings']['job_clusters'][0]['new_cluster']['node_type_id'])
+          new_job_spec = change_vals(job_spec, 'node_type_id', new_value)
           new_jobs_spec.append(new_job_spec)
           if DEBUG:
             print('DEBUG: Job ID: ', job_id)
@@ -258,18 +271,6 @@ def update_node(job_id,policy_id, attribute, new_attribute):
               print('ERROR: Updating job', job_id, updated.content)
             else:
               print('INFO: Updated job', job_id)
-        else:          
-          print("do not find it")
-
-
-
-# COMMAND ----------
-
-storage_list = storage.split(",")
-for storage in storage_list:
-  exist = gen_storage_conf_v1(storage)
-  for old in exist:
-    update_node('809485584922888',policy_id,old,"spark.hadoop."+old)
 
 # COMMAND ----------
 
@@ -278,48 +279,23 @@ from time import sleep, time
 from tqdm import tqdm
 
 
-num_cpu = 16
-
+num_cpu = 3
 if __name__ == "__main__":  
     # Define a thread pool with 3 workers
     job_ids = get_job_ids()
-    storage_list = storage.split(",")
-    l = len(job_ids)*len(storage_list)*5
+    
+    l = len(job_ids)
     with tqdm(total=l) as pbar:
       with ThreadPoolExecutor(max_workers=num_cpu) as executor:
         futures = []
         #start = time()
-
-        for storage in storage_list:
-          exist = gen_storage_conf_v1(storage)
-          for old in exist:
-            for job_id in job_ids:
-              args = [job_id, policy_id, old, "spark.hadoop."+old]
-              futures.append(executor.submit(update_node, *args))
+        for job_id in job_ids:
+          args = [job_id, policy_id, attribute, value]
+          futures.append(executor.submit(update_node, *args))
         for future in futures:
-              result = future.result()
-              pbar.update(1)
-      #results = [future.result() for future in futures]
-      #end = time()
-      #print (end-start)
+          result = future.result()
+          pbar.update(1)
 
-# COMMAND ----------
-
-# job_ids = get_job_ids()
-# storage_list = storage.split(",")
-# start = time()
-# print(storage_list)
-# for storage in storage_list:
-#   print(storage)
-#   exist = gen_storage_conf_v1(storage)
-#   #print(exist)
-#   for old in exist:
-#     for job_id in job_ids:
-#       #print(job_id, policy_id, old, "spark.hadoop."+old)
-#       update_node(job_id, policy_id, old, "spark.hadoop."+old)
-# end = time()
-
-# print(end-start)
 
 # COMMAND ----------
 
