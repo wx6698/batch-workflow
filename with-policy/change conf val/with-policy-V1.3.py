@@ -196,7 +196,7 @@ def update_node(job_id, policy_id, attribute, new_value):
       if(job_spec['settings']['job_clusters'][0]['new_cluster']['policy_id']==policy_id):
         print (job_id)
         vals_driver = list(find_vals(job_spec, attribute))
-        if (vals-driver):
+        if (vals_driver):
           print(job_spec['settings']['job_clusters'][0]['new_cluster'][attribute])
           new_job_spec = change_vals(job_spec, attribute, new_value)
           new_jobs_spec.append(new_job_spec)

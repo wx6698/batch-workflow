@@ -1,5 +1,10 @@
 # Databricks notebook source
+# MAGIC %pip install jsonlines
 # MAGIC %pip install tqdm
+
+# COMMAND ----------
+
+dbutils.library.restartPython()
 
 # COMMAND ----------
 
@@ -41,10 +46,6 @@ if DRY_RUN == "False":
   DRY_RUN = False
 else :
   DRY_RUN = True
-
-# COMMAND ----------
-
-print (DRY_RUN)
 
 # COMMAND ----------
 
@@ -106,7 +107,7 @@ def find_vals(job_spec, conf_key):
 
 def change_vals(job_spec, conf_key, new_val):
     vals = list(find_vals(job_spec, conf_key))
-    print(vals)
+    print("will chage",conf_key,"from: ",vals,"to: ",new_val)
     if vals:
         old_val = vals[0]
         job_spec_str = json.dumps(job_spec)
@@ -117,9 +118,16 @@ def change_vals(job_spec, conf_key, new_val):
             print('DEBUG: No change in', conf_key)
         return job_spec
 
-def update_job_spec(job_id, new_job_spec):
+# def update_job_spec(job_id, new_job_spec):
+#     api_url = f"{API_URL}/api/2.1/jobs/update"
+#     new_settings = new_job_spec['settings']    
+#     response = requests.post(api_url, headers=AUTH_HEADER, json={ 'job_id': job_id, 'new_settings': new_settings })
+#     return response
+
+
+def update_job_spec(job_id, new_spec):
     api_url = f"{API_URL}/api/2.1/jobs/update"
-    new_settings = new_job_spec['settings']    
+    new_settings = {'job_clusters':new_spec}
     response = requests.post(api_url, headers=AUTH_HEADER, json={ 'job_id': job_id, 'new_settings': new_settings })
     return response
 
@@ -193,10 +201,11 @@ def update_node(job_id, policy_id, attribute, new_value):
   vals = list(find_vals(job_spec, 'policy_id'))
   if (vals):
     try:
-      if(job_spec['settings']['job_clusters'][0]['new_cluster']['policy_id']==policy_id):
-        vals_driver = list(find_vals(job_spec, attribute))
-        if (vals_driver):
-          new_job_spec = change_vals(job_spec, attribute, new_value)
+      for cluster in job_spec['settings']['job_clusters']:
+        vals_policy = list(find_vals(cluster, 'policy_id'))
+        vals_conf = list(find_vals(cluster, attribute))
+        if (vals_policy[0]==policy_id and vals_conf):
+          new_job_spec = change_vals(cluster, attribute, new_value)
           new_jobs_spec.append(new_job_spec)
           if DEBUG:
             print('DEBUG: Job ID: ', job_id)
@@ -210,67 +219,54 @@ def update_node(job_id, policy_id, attribute, new_value):
             if updated.status_code != 200:
               print('ERROR: Updating job', job_id, updated.content)
             else:
-              print('INFO: Updated job', job_id)
+              print('INFO: Updated job', job_id,"succeed")
         else:
-          print(job_spec['settings']['job_clusters'][0]['new_cluster']['node_type_id'])
-          new_job_spec = change_vals(job_spec, 'node_type_id', new_value)
-          new_jobs_spec.append(new_job_spec)
-          if DEBUG:
-            print('DEBUG: Job ID: ', job_id)
-            print(new_job_spec)
-            recursive_compare(job_spec, new_job_spec)
-          if DRY_RUN:
-            print('INFO: [Dry-run] Changes to job', job_id)
-            #recursive_compare(job_spec, new_job_spec)
-          else:
-            updated = update_job_spec(job_id, new_job_spec)
-            if updated.status_code != 200:
-              print('ERROR: Updating job', job_id, updated.content)
-            else:
-              print('INFO: Updated job', job_id)
+          print(job_id,": does not match")
+          pass
 
     except NameError as error:
-      print(error,"on:",job_spec)
+      print(error,"on:",cluster)
       pass
-    except:
-      #print (job_spec)
-      if(job_spec['settings']['tasks'][0]['new_cluster']['policy_id']==policy_id):
-        print (job_id)
-        vals_driver = list(find_vals(job_spec, attribute))
-        if (vals-driver):
-          print(job_spec['settings']['job_clusters'][0]['new_cluster'][attribute])
-          new_job_spec = change_vals(job_spec, attribute, new_value)
-          new_jobs_spec.append(new_job_spec)
-          if DEBUG:
-            print('DEBUG: Job ID: ', job_id)
-            print(new_job_spec)
-            recursive_compare(job_spec, new_job_spec)
-          if DRY_RUN:
-            print('INFO: [Dry-run] Changes to job', job_id)
-            recursive_compare(job_spec, new_job_spec)
-          else:
-            updated = update_job_spec(job_id, new_job_spec)
-            if updated.status_code != 200:
-              print('ERROR: Updating job', job_id, updated.content)
-            else:
-              print('INFO: Updated job', job_id)
-        else:
-          print(job_spec['settings']['job_clusters'][0]['new_cluster']['node_type_id'])
-          new_job_spec = change_vals(job_spec, 'node_type_id', new_value)
-          new_jobs_spec.append(new_job_spec)
-          if DEBUG:
-            print('DEBUG: Job ID: ', job_id)
-            print(new_job_spec)
-            recursive_compare(job_spec, new_job_spec)
-          if DRY_RUN:
-            print('INFO: [Dry-run] Changes to job', job_id)
-            #recursive_compare(job_spec, new_job_spec)
-          else:
-            updated = update_job_spec(job_id, new_job_spec)
-            if updated.status_code != 200:
-              print('ERROR: Updating job', job_id, updated.content)
-            else:
-              print('INFO: Updated job', job_id)
+    except Exception as error:
+      #print ("find an error on: ",job_id,error,vals_policy)
+      print("may need to check: ",job_id,": ",job_spec)
+      pass
+      # if(job_spec['settings']['tasks'][0]['new_cluster']['policy_id']==policy_id):
+      #   print (job_id)
+      #   vals_driver = list(find_vals(job_spec, attribute))
+      #   if (vals-driver):
+      #     print(job_spec['settings']['job_clusters'][0]['new_cluster'][attribute])
+      #     new_job_spec = change_vals(job_spec, attribute, new_value)
+      #     new_jobs_spec.append(new_job_spec)
+      #     if DEBUG:
+      #       print('DEBUG: Job ID: ', job_id)
+      #       print(new_job_spec)
+      #       recursive_compare(job_spec, new_job_spec)
+      #     if DRY_RUN:
+      #       print('INFO: [Dry-run] Changes to job', job_id)
+      #       recursive_compare(job_spec, new_job_spec)
+      #     else:
+      #       updated = update_job_spec(job_id, new_job_spec)
+      #       if updated.status_code != 200:
+      #         print('ERROR: Updating job', job_id, updated.content)
+      #       else:
+      #         print('INFO: Updated job', job_id)
+      #   else:
+      #     new_job_spec = change_vals(job_spec, attribute, new_value)
+      #     new_jobs_spec.append(new_job_spec)
+      #     if DEBUG:
+      #       print('DEBUG: Job ID: ', job_id)
+      #       print(new_job_spec)
+      #       recursive_compare(job_spec, new_job_spec)
+      #     if DRY_RUN:
+      #       print('INFO: [Dry-run] Changes to job', job_id)
+      #       #recursive_compare(job_spec, new_job_spec)
+      #     else:
+      #       updated = update_job_spec(job_id, new_job_spec)
+      #       if updated.status_code != 200:
+      #         print('ERROR: Updating job', job_id, updated.content)
+      #       else:
+      #          print('INFO: Updated job', job_id)
 
 # COMMAND ----------
 
@@ -296,6 +292,52 @@ if __name__ == "__main__":
           result = future.result()
           pbar.update(1)
 
+
+# COMMAND ----------
+
+
+# import jsonlines
+# import os
+# if(os.path.isfile('/tmp/test.json')):
+#   os.remove("/tmp/test.json")
+
+
+# job_ids = get_job_ids()
+# for job_id in job_ids:
+#   job_spec = get_job_spec(job_id)
+#   with jsonlines.open("/tmp/test.json", "a") as writer:   # for writing
+#     job_spec = get_job_spec(job_id)
+#    # job_cluster = job_spec['job_id']['settings']
+#     writer.write(job_spec)
+
+#dbutils.fs.cp('file:/tmp/test.json','/tmp/job.json',True)
+
+
+# COMMAND ----------
+
+#dbutils.fs.cp('file:/tmp/test.json','/tmp/job1.json',True)
+
+
+# COMMAND ----------
+
+df = spark.read.table("main.default.job")
+display(df)
+
+# COMMAND ----------
+
+# from pyspark.sql.types import *
+# spark.conf.set("spark.sql.legacy.json.allowEmptyString.enabled", True)
+
+# schema1 = StructType([
+#     StructField("created_time", LongType(), True),
+#     StructField("creator_user_name", StringType(), True),
+#     StructField("job_id", LongType(), True),
+#     StructField("run_as_owner", BooleanType() , True),
+#     StructField("run_as_user_name", StringType(), True),
+#     StructField("settings", StructType(), True)
+# ])
+# df = spark.read.option("inferSchema","true").json("/tmp/job1.json",schema=schema1)
+# display(df)
 
 # COMMAND ----------
 
