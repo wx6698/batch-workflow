@@ -15,6 +15,7 @@ dbutils.widgets.dropdown("DEBUG","True", ["True", "False"])
 dbutils.widgets.dropdown("DRY_RUN","True", ["True", "False"])
 
 
+
 # COMMAND ----------
 
 policy_id=dbutils.widgets.get("policy_id")
@@ -31,7 +32,6 @@ import traceback
 import time
 
 
-#API_URL = dbutils.notebook.entry_point.getDbutils().notebook().getContext().apiUrl().getOrElse(None)
 API_URL = dbutils.notebook.entry_point.getDbutils().notebook().getContext().apiUrl().getOrElse(None)
 API_TOKEN = dbutils.notebook.entry_point.getDbutils().notebook().getContext().apiToken().getOrElse(None)
 AUTH_HEADER = { 'Authorization': f"Bearer {API_TOKEN}" }
@@ -90,15 +90,6 @@ def get_job_spec(job_id):
     return response.json()
 
 
-#def get_job(job_spec,policy_id):
-    #print(job_spec)
-    # for item in data['settings']['job_clusters']['new_cluster']:
-    #   try:    
-    #     for row in item['policy_id']:
-    #       print (row)
-    #   except KeyError as Ex:
-    #     print ("{} not found in {}".format(Ex,item))
-
 
 def find_vals(job_spec, conf_key):
     if isinstance(job_spec, list):
@@ -124,13 +115,13 @@ def change_vals(job_spec, conf_key, new_val):
         if DEBUG:
             print('DEBUG: No change in', conf_key)
         return job_spec
-
-# def update_job_spec(job_id, new_job_spec):
-#     api_url = f"{API_URL}/api/2.1/jobs/update"
-#     new_settings = new_job_spec['settings']    
-#     response = requests.post(api_url, headers=AUTH_HEADER, json={ 'job_id': job_id, 'new_settings': new_settings })
-#     return response
-
+    
+def add_vals(job_spec, conf_key, new_val):
+    #vals = list(find_vals(job_spec, conf_key))
+    #print(job_spec['job_cluster_key'],"will chage",conf_key,"from: ",vals,"to: ",new_val)
+    new_conf = {attribute:value}
+    job_spec.append(new_settings)
+    return json.loads(job_spec_str)
 
 def update_job_spec(job_id, new_settings):
     api_url = f"{API_URL}/api/2.1/jobs/update"
@@ -177,13 +168,12 @@ def update_node(job_id, policy_id, attribute, new_value):
       for cluster in job_spec['settings']['job_clusters']:
         vals_policy = list(find_vals(cluster, 'policy_id'))
         vals_conf = list(find_vals(cluster, attribute))
-        if (vals_policy and vals_policy[0]==policy_id and vals_conf):
-          new_job_spec = change_vals(cluster, attribute, new_value)
+        if (vals_policy and vals_policy[0]==policy_id and vals_conf is None):
+          new_job_spec = add_vals(cluster, attribute, new_value)
           new_settings['job_clusters'].append(new_job_spec)
         else:
-          print(job_id," ",cluster['job_cluster_key'],": do not configure policy",policy_id)
+          print(job_id," ",cluster['job_cluster_key'],": do not to change due to either the policy not configured or attribute already exist")
           pass
-
 
       if DEBUG:
             print('DEBUG: Job ID: ', job_id)
@@ -251,46 +241,7 @@ def update_node(job_id, policy_id, attribute, new_value):
 
 # COMMAND ----------
 
-#update_node("588707703431949",'00174160748DA3C7','data_security_mode','NONE')
-
-# COMMAND ----------
-
-# from concurrent.futures import ThreadPoolExecutor
-# import time
-
-# num_cpu = 3
-# i = 1
-
-# job_ids = get_job_ids()
-# with ThreadPoolExecutor(max_workers=num_cpu) as executor:
-#   futures = []
-
-#   for job_id in job_ids:
-#     args = [job_id]
-#     futures.append(executor.submit(get_job_spec, *args))
-#   for future in futures:
-#     i = i + 1
-#     print(i)
-#     if i%5 == 0:
-#       print("wait")
-#       time.sleep(10)
-#     result = future.result()
-#     print(result)
-
-# COMMAND ----------
-
-
-
-# COMMAND ----------
-
-# import time
-# i = 0
-# job_ids = get_job_ids()
-# for job_id in job_ids:
-#   i = i + 1
-#   if i%18 == 0:
-#     time.sleep(1)
-#   update_node(job_id,policy_id, attribute, value)
+update_node('588707703431949',policy_id, attribute, value)
 
 # COMMAND ----------
 
