@@ -120,7 +120,7 @@ def add_vals(job_spec, conf_key, new_val):
     vals_conf = list(find_vals(job_spec, conf_key))
     if (len(vals_conf)==0):
         new_conf = {attribute:value}
-        #print(type(job_spec))
+        print(type(job_spec))
         job_spec["new_cluster"].update(new_conf)
     return job_spec
 
@@ -153,11 +153,49 @@ def recursive_compare(d1, d2, level='root'):
         if d1 != d2:
             print('{:<20} {} != {}'.format(level, d1, d2))
 
+def legacy_add_conf(job_spec, conf_key, new_val):
+    # if(job_spec['settings']['tasks'][0]['new_cluster']['policy_id']==policy_id):
+      #   print (job_id)
+      #   vals_driver = list(find_vals(job_spec, attribute))
+      #   if (vals-driver):
+      #     print(job_spec['settings']['job_clusters'][0]['new_cluster'][attribute])
+      #     new_job_spec = change_vals(job_spec, attribute, new_value)
+      #     new_jobs_spec.append(new_job_spec)
+      #     if DEBUG:
+      #       print('DEBUG: Job ID: ', job_id)
+      #       print(new_job_spec)
+      #       recursive_compare(job_spec, new_job_spec)
+      #     if DRY_RUN:
+      #       print('INFO: [Dry-run] Changes to job', job_id)
+      #       recursive_compare(job_spec, new_job_spec)
+      #     else:
+      #       updated = update_job_spec(job_id, new_job_spec)
+      #       if updated.status_code != 200:
+      #         print('ERROR: Updating job', job_id, updated.content)
+      #       else:
+      #         print('INFO: Updated job', job_id)
+      #   else:
+      #     new_job_spec = change_vals(job_spec, attribute, new_value)
+      #     new_jobs_spec.append(new_job_spec)
+      #     if DEBUG:
+      #       print('DEBUG: Job ID: ', job_id)
+      #       print(new_job_spec)
+      #       recursive_compare(job_spec, new_job_spec)
+      #     if DRY_RUN:
+      #       print('INFO: [Dry-run] Changes to job', job_id)
+      #       #recursive_compare(job_spec, new_job_spec)
+      #     else:
+      #       updated = update_job_spec(job_id, new_job_spec)
+      #       if updated.status_code != 200:
+      #         print('ERROR: Updating job', job_id, updated.content)
+      #       else:
+      #          print('INFO: Updated job', job_id)
+
 
 # COMMAND ----------
 
 import time
-def update_job(job_id, policy_id, attribute, new_value):
+def update_node(job_id, policy_id, attribute, new_value):
   jobs_spec = []
   new_jobs_spec = []
   new_settings = {'job_clusters':new_jobs_spec}
@@ -205,7 +243,7 @@ def update_job(job_id, policy_id, attribute, new_value):
 
 # COMMAND ----------
 
-
+# update_node('1023165188303975', policy_id, attribute, value)
 
 # COMMAND ----------
 
@@ -225,7 +263,7 @@ if __name__ == "__main__":
         #start = time()
         for job_id in job_ids:
           args = [job_id, policy_id, attribute, value]
-          futures.append(executor.submit(update_job, *args))
+          futures.append(executor.submit(update_node, *args))
         for future in futures:
           result = future.result()
           pbar.update(1)
