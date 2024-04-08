@@ -120,13 +120,11 @@ def add_vals(job_spec, conf_key, new_val):
     vals_conf = list(find_vals(job_spec, conf_key))
     if (len(vals_conf)==0):
         new_conf = {attribute:value}
-        print(type(job_spec))
         job_spec["new_cluster"].update(new_conf)
     return job_spec
 
 def update_job_spec(job_id, new_settings):
     api_url = f"{API_URL}/api/2.1/jobs/update"
-    
     print({ 'job_id': job_id, 'new_settings': new_settings })
     response = requests.post(api_url, headers=AUTH_HEADER, json={ 'job_id': job_id, 'new_settings': new_settings })
     return response
@@ -153,49 +151,89 @@ def recursive_compare(d1, d2, level='root'):
         if d1 != d2:
             print('{:<20} {} != {}'.format(level, d1, d2))
 
-def legacy_add_conf(job_spec, conf_key, new_val):
-    # if(job_spec['settings']['tasks'][0]['new_cluster']['policy_id']==policy_id):
-      #   print (job_id)
-      #   vals_driver = list(find_vals(job_spec, attribute))
-      #   if (vals-driver):
-      #     print(job_spec['settings']['job_clusters'][0]['new_cluster'][attribute])
-      #     new_job_spec = change_vals(job_spec, attribute, new_value)
-      #     new_jobs_spec.append(new_job_spec)
-      #     if DEBUG:
-      #       print('DEBUG: Job ID: ', job_id)
-      #       print(new_job_spec)
-      #       recursive_compare(job_spec, new_job_spec)
-      #     if DRY_RUN:
-      #       print('INFO: [Dry-run] Changes to job', job_id)
-      #       recursive_compare(job_spec, new_job_spec)
-      #     else:
-      #       updated = update_job_spec(job_id, new_job_spec)
-      #       if updated.status_code != 200:
-      #         print('ERROR: Updating job', job_id, updated.content)
-      #       else:
-      #         print('INFO: Updated job', job_id)
-      #   else:
-      #     new_job_spec = change_vals(job_spec, attribute, new_value)
-      #     new_jobs_spec.append(new_job_spec)
-      #     if DEBUG:
-      #       print('DEBUG: Job ID: ', job_id)
-      #       print(new_job_spec)
-      #       recursive_compare(job_spec, new_job_spec)
-      #     if DRY_RUN:
-      #       print('INFO: [Dry-run] Changes to job', job_id)
-      #       #recursive_compare(job_spec, new_job_spec)
-      #     else:
-      #       updated = update_job_spec(job_id, new_job_spec)
-      #       if updated.status_code != 200:
-      #         print('ERROR: Updating job', job_id, updated.content)
-      #       else:
-      #          print('INFO: Updated job', job_id)
+def legacy_add_conf(job_id, policy_id, attribute, new_value):
+    jobs_spec = []
+    new_jobs_spec = []
+    new_settings = {'new_cluster':new_jobs_spec}
+    job_spec = get_job_spec(job_id)
+    val_policy = list(find_vals(job_spec, 'policy_id'))
+    if (val_policy and val_policy[0]==policy_id):
+        try:
+            task = job_spec['settings']['tasks'][0]#
+            vals_conf = list(find_vals(task, attribute))
+            if len(vals_conf) ==0:
+                # new_conf = {attribute:value}
+                # job_spec["new_cluster"].update(new_conf)
+                new_task_spec = add_vals(task, attribute, new_value)
+                
+                if DEBUG:
+                    print('DEBUG: Job ID: ', job_id)
+                    print(new_jobs_spec)
+                    recursive_compare(job_spec, new_jobs_spec)
+                if DRY_RUN:
+                    print('INFO: [Dry-run] Changes to job', job_id)
+                    #recursive_compare(job_spec, new_jobs_spec)
+                    print("new settings:",new_jobs_spec)
+                else:
+                    updated = update_job_spec(job_id, {'new_cluster':new_task_spec['new_cluster']})
+                    if updated.status_code != 200:
+                        print('ERROR: Updating job', job_id, updated.content)
+                    else:
+                        print('INFO: Updated job', job_id,"succeed")
+            else:
+                print(job_id," already has the attribute in place ")
+                pass
 
+            
+
+        except NameError as error:
+            print(traceback.format_exc())
+            pass
+        except Exception as error:
+        #print ("find an error on: ",job_id,error,vals_policy)
+            print(traceback.format_exc())
+            pass
+    else:
+        print(job_id,": clusters do not configure",policy_id)
+        time.sleep(0.3)
 
 # COMMAND ----------
 
-import time
-def update_node(job_id, policy_id, attribute, new_value):
+# {
+#    "job_id":"801807388347509",
+#    "new_settings":{
+#           "new_cluster": {
+#           "cluster_name": "",
+#           "spark_version": "12.2.x-scala2.12",
+#           "aws_attributes": {
+#             "first_on_demand": 1,
+#             "availability": "SPOT_WITH_FALLBACK",
+#             "zone_id": "us-west-2a",
+#             "spot_bid_price_percent": 100,
+#             "ebs_volume_count": 0
+#           },
+#           "node_type_id": "m5d.xlarge",
+#           "custom_tags": {
+#             "Group": "Marketing Science"
+#           },
+#           "spark_env_vars": {
+#             "PYSPARK_PYTHON": "/databricks/python3/bin/python3"
+#           },
+#           "enable_elastic_disk": true,
+#           "policy_id": "000455389CE1DAB5",
+#           "runtime_engine": "STANDARD",
+#           "autoscale": {
+#             "min_workers": 1,
+#             "max_workers": 3
+#           },
+#           "data_security_mode": "NONE"
+#         }
+#    }
+# }
+
+# COMMAND ----------
+
+def add_conf(job_id, policy_id, attribute, new_value):
   jobs_spec = []
   new_jobs_spec = []
   new_settings = {'job_clusters':new_jobs_spec}
@@ -243,7 +281,23 @@ def update_node(job_id, policy_id, attribute, new_value):
 
 # COMMAND ----------
 
-# update_node('1023165188303975', policy_id, attribute, value)
+def update_job(job_id, policy_id, attribute, new_value):
+    job_spec = get_job_spec(job_id)
+    job_clusters = list(find_vals(job_spec, "job_clusters"))
+    existing_cluster_id = list(find_vals(job_spec, "existing_cluster_id"))
+    if len(existing_cluster_id)!=0 :
+        print(job_id,"use exist cluster",existing_cluster_id)
+    elif len(job_clusters)!=0 :
+        print(job_id,"is in new formate")
+        add_conf(job_id, policy_id, attribute, new_value)
+    else:
+        print(job_id,"is in legacy formate")
+        legacy_add_conf(job_id, policy_id, attribute, new_value)
+
+# COMMAND ----------
+
+update_job('1057679848571824','0010C413181F1B20', attribute, value)
+
 
 # COMMAND ----------
 
@@ -263,7 +317,7 @@ if __name__ == "__main__":
         #start = time()
         for job_id in job_ids:
           args = [job_id, policy_id, attribute, value]
-          futures.append(executor.submit(update_node, *args))
+          futures.append(executor.submit(update_job, *args))
         for future in futures:
           result = future.result()
           pbar.update(1)
