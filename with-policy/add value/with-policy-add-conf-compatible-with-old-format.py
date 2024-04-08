@@ -199,40 +199,6 @@ def legacy_add_conf(job_id, policy_id, attribute, new_value):
 
 # COMMAND ----------
 
-# {
-#    "job_id":"801807388347509",
-#    "new_settings":{
-#           "new_cluster": {
-#           "cluster_name": "",
-#           "spark_version": "12.2.x-scala2.12",
-#           "aws_attributes": {
-#             "first_on_demand": 1,
-#             "availability": "SPOT_WITH_FALLBACK",
-#             "zone_id": "us-west-2a",
-#             "spot_bid_price_percent": 100,
-#             "ebs_volume_count": 0
-#           },
-#           "node_type_id": "m5d.xlarge",
-#           "custom_tags": {
-#             "Group": "Marketing Science"
-#           },
-#           "spark_env_vars": {
-#             "PYSPARK_PYTHON": "/databricks/python3/bin/python3"
-#           },
-#           "enable_elastic_disk": true,
-#           "policy_id": "000455389CE1DAB5",
-#           "runtime_engine": "STANDARD",
-#           "autoscale": {
-#             "min_workers": 1,
-#             "max_workers": 3
-#           },
-#           "data_security_mode": "NONE"
-#         }
-#    }
-# }
-
-# COMMAND ----------
-
 def add_conf(job_id, policy_id, attribute, new_value):
   jobs_spec = []
   new_jobs_spec = []
@@ -293,11 +259,6 @@ def update_job(job_id, policy_id, attribute, new_value):
     else:
         print(job_id,"is in legacy formate")
         legacy_add_conf(job_id, policy_id, attribute, new_value)
-
-# COMMAND ----------
-
-update_job('1057679848571824','0010C413181F1B20', attribute, value)
-
 
 # COMMAND ----------
 
