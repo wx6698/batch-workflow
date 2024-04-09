@@ -119,7 +119,6 @@ def change_vals(job_spec, conf_key, new_val):
 
 def update_job_spec(job_id, new_settings):
     api_url = f"{API_URL}/api/2.1/jobs/update"
-    
     print({ 'job_id': job_id, 'new_settings': new_settings })
     response = requests.post(api_url, headers=AUTH_HEADER, json={ 'job_id': job_id, 'new_settings': new_settings })
     return response
@@ -202,7 +201,6 @@ def update_value(job_id, policy_id, attribute, new_value):
   new_settings = {'job_clusters':new_jobs_spec}
   job_spec = get_job_spec(job_id)
   vals = list(find_vals(job_spec, 'policy_id'))
-  print(job_id,vals)
   if (vals and vals[0]==policy_id):
     try:
       for cluster in job_spec['settings']['job_clusters']:
@@ -257,10 +255,6 @@ def update_job(job_id, policy_id, attribute, new_value):
     else:
         print(job_id,"is in legacy formate")
         legacy_update_value(job_id, policy_id, attribute, new_value)
-
-# COMMAND ----------
-
-update_job('588707703431949', policy_id, attribute, value)
 
 # COMMAND ----------
 
