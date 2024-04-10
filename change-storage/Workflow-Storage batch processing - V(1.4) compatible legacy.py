@@ -265,6 +265,16 @@ def update_job(job_id, policy_id, attribute, new_attribute):
 
 # COMMAND ----------
 
+
+
+storage_list = storage.split(",")
+for storage in storage_list:
+          exist = gen_storage_conf_v1(storage)
+          for old in exist:
+            update_job('486601116513612', policy_id, old, "spark.hadoop."+old)              
+
+# COMMAND ----------
+
 from concurrent.futures import ThreadPoolExecutor
 from tqdm import tqdm
 
