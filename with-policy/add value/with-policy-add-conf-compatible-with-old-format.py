@@ -56,29 +56,27 @@ else :
 def get_job_ids():
     session = requests.Session()
     api_url = f"{API_URL}/api/2.1/jobs/list"
-    api_params = { "limit": 10, "offset": 0 }
+    api_params = { "limit": 20, "offset": 0 }
     
     try:
         response = session.get(api_url, headers=AUTH_HEADER, params=api_params)
         #response_data = response.json()["jobs"]
         job_ids = []
+        #response.json()["jobs"]
         for job_id in response.json()["jobs"]:
-            #print(job_id["job_id"])
             job_ids.append(job_id["job_id"])
         response_length = len(response.json()["jobs"])
         while response.json()["has_more"]:
-            api_params["offset"] += 10
+            next_page_token = response.json()["next_page_token"]
+            api_params = { "page_token":{next_page_token}}
             response = session.get(api_url, headers=AUTH_HEADER, params=api_params)
             for job_id in response.json()["jobs"]:
                 #print(job_id["job_id"])
                 job_ids.append(job_id["job_id"])
             #response_data.append(response.json()["jobs"])
             response_length += len(response.json()["jobs"])
-    except requests.exceptions.RequestException as error:
-        print(traceback.format_exc())
+    except requests.exceptions.RequestException:
         pass
-    if DEBUG:
-        print(response_length)
     return job_ids
   
 
