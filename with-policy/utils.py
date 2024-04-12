@@ -64,7 +64,6 @@ def find_vals(job_spec, conf_key):
 
 def change_vals(job_spec, conf_key, new_val):
     vals = list(find_vals(job_spec, conf_key))
-    print(job_spec['job_cluster_key'],"will chage",conf_key,"from: ",vals,"to: ",new_val)
     if vals:
         old_val = vals[0]
         job_spec_str = json.dumps(job_spec)
@@ -321,7 +320,6 @@ def legacy_update_value(job_id, policy_id, attribute, new_value):
             vals_conf = list(find_vals(task, attribute))
             if len(vals_conf) !=0:
                 new_task_spec = change_vals(task, attribute, new_value)
-                
                 if DEBUG:
                     print('DEBUG: Job ID: ', job_id)
                     print( {'new_cluster':new_task_spec['new_cluster']})
@@ -366,8 +364,8 @@ def update_value(job_id, policy_id, attribute, new_value):
       for cluster in job_spec['settings']['job_clusters']:
         vals_policy = list(find_vals(cluster, 'policy_id'))
         vals_conf = list(find_vals(cluster, attribute))
+        new_job_spec = change_vals(cluster, attribute, new_value)
         if (vals_policy and vals_policy[0]==policy_id and vals_conf):
-          new_job_spec = change_vals(cluster, attribute, new_value)
           new_settings['job_clusters'].append(new_job_spec)
         else:
           print(job_id," ",cluster['job_cluster_key'],": do not configure policy",policy_id)
