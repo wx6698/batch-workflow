@@ -205,7 +205,8 @@ def update_conf(job_id, policy_id, attribute, new_attribute):
   new_settings = {'job_clusters':new_jobs_spec}
   job_spec = get_job_spec(job_id)
   vals = list(find_vals(job_spec, 'policy_id'))
-  if (vals and vals[0]==policy_id):
+  print(vals)
+  if vals and vals.__contains__(policy_id):
     try:
       for cluster in job_spec['settings']['job_clusters']:
         vals_policy = list(find_vals(cluster, 'policy_id'))
@@ -246,10 +247,6 @@ def update_conf(job_id, policy_id, attribute, new_attribute):
 
 # COMMAND ----------
 
-
-
-# COMMAND ----------
-
 def update_job(job_id, policy_id, attribute, new_attribute):
     job_spec = get_job_spec(job_id)
     job_clusters = list(find_vals(job_spec, "job_clusters"))
@@ -271,7 +268,7 @@ storage_list = storage.split(",")
 for storage in storage_list:
           exist = gen_storage_conf_v1(storage)
           for old in exist:
-            update_job('486601116513612', policy_id, old, "spark.hadoop."+old)              
+            update_job('718543940080673', policy_id, old, "spark.hadoop."+old)              
 
 # COMMAND ----------
 

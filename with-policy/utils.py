@@ -121,8 +121,8 @@ def legacy_del_conf(job_id, policy_id, attribute):
     new_jobs_spec = []
     new_settings = {'new_cluster':new_jobs_spec}
     job_spec = get_job_spec(job_id)
-    val_policy = list(find_vals(job_spec, 'policy_id'))
-    if (val_policy and val_policy[0]==policy_id):
+    vals = list(find_vals(job_spec, 'policy_id'))
+    if vals and vals.__contains__(policy_id):
         try:
             task = job_spec['settings']['tasks'][0]#
             vals_conf = list(find_vals(task, attribute))
@@ -170,7 +170,7 @@ def del_conf(job_id, policy_id, attribute):
   new_settings = {'job_clusters':new_jobs_spec}
   job_spec = get_job_spec(job_id)
   vals = list(find_vals(job_spec, 'policy_id'))
-  if (vals and vals[0]==policy_id):
+  if vals and vals.__contains__(policy_id):
     try:
       for cluster in job_spec['settings']['job_clusters']:
         vals_policy = list(find_vals(cluster, 'policy_id'))
@@ -217,8 +217,8 @@ def legacy_add_conf(job_id, policy_id, attribute, new_value):
     new_jobs_spec = []
     new_settings = {'new_cluster':new_jobs_spec}
     job_spec = get_job_spec(job_id)
-    val_policy = list(find_vals(job_spec, 'policy_id'))
-    if (val_policy and val_policy[0]==policy_id):
+    vals = list(find_vals(job_spec, 'policy_id'))
+    if vals and vals.__contains__(policy_id):
         try:
             task = job_spec['settings']['tasks'][0]#
             vals_conf = list(find_vals(task, attribute))
@@ -266,7 +266,7 @@ def add_conf(job_id, policy_id, attribute, new_value):
   new_settings = {'job_clusters':new_jobs_spec}
   job_spec = get_job_spec(job_id)
   vals = list(find_vals(job_spec, 'policy_id'))
-  if (vals and vals[0]==policy_id):
+  if vals and vals.__contains__(policy_id):
     try:
       for cluster in job_spec['settings']['job_clusters']:
         vals_policy = list(find_vals(cluster, 'policy_id'))
@@ -313,8 +313,8 @@ def legacy_update_value(job_id, policy_id, attribute, new_value):
     new_jobs_spec = []
     new_settings = {'new_cluster':new_jobs_spec}
     job_spec = get_job_spec(job_id)
-    val_policy = list(find_vals(job_spec, 'policy_id'))
-    if (val_policy and val_policy[0]==policy_id):
+    vals = list(find_vals(job_spec, 'policy_id'))
+    if vals and vals.__contains__(policy_id):
         try:
             task = job_spec['settings']['tasks'][0]
             vals_conf = list(find_vals(task, attribute))
@@ -359,7 +359,7 @@ def update_value(job_id, policy_id, attribute, new_value):
   new_settings = {'job_clusters':new_jobs_spec}
   job_spec = get_job_spec(job_id)
   vals = list(find_vals(job_spec, 'policy_id'))
-  if (vals and vals[0]==policy_id):
+  if vals and vals.__contains__(policy_id):
     try:
       for cluster in job_spec['settings']['job_clusters']:
         vals_policy = list(find_vals(cluster, 'policy_id'))
