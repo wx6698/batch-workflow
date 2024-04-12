@@ -282,36 +282,6 @@ if __name__ == "__main__":
 
 # COMMAND ----------
 
-
-import jsonlines
-import os
-if(os.path.isfile('/tmp/test.json')):
-  os.remove("/tmp/test.json")
-
-
-job_ids = get_job_ids()
-for job_id in job_ids:
-  job_spec = get_job_spec(job_id)
-  with jsonlines.open("/tmp/test.json", "a") as writer:   # for writing
-    job_spec = get_job_spec(job_id)
-   # job_cluster = job_spec['job_id']['settings']
-    writer.write(job_spec)
-
-dbutils.fs.cp('file:/tmp/test.json','/tmp/job.json',True)
-
-
-# COMMAND ----------
-
-#dbutils.fs.cp('file:/tmp/test.json','/tmp/job1.json',True)
-
-
-# COMMAND ----------
-
-# df = spark.read.table("main.default.job")
-# display(df)
-
-# COMMAND ----------
-
 # from pyspark.sql.types import *
 # spark.conf.set("spark.sql.legacy.json.allowEmptyString.enabled", True)
 
