@@ -116,9 +116,17 @@ def change_vals(job_spec, conf_key, new_val):
     
 def add_vals(job_spec, conf_key, new_val):
     vals_conf = list(find_vals(job_spec, conf_key))
-    if (len(vals_conf)==0):
+    vals_spark = list(find_vals(job_spec, 'spark_conf'))
+    if len(vals_conf)==0 and len(vals_spark)!=0:
         new_conf = {attribute:value}
         job_spec["new_cluster"]["spark_conf"].update(new_conf)
+    elif len(vals_spark)==0:
+
+        new_conf = {"spark_conf": {
+            attribute:value
+          }
+        }
+        job_spec["new_cluster"].update(new_conf)
     return job_spec
 
 def update_job_spec(job_id, new_settings):
