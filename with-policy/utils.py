@@ -125,6 +125,21 @@ def recursive_compare(d1, d2, level='root'):
         if d1 != d2:
             print('{:<20} {} != {}'.format(level, d1, d2))
 
+def gen_storage_conf_v1 (name):
+    conf_spec = []
+    auth= f"fs.azure.account.auth.type.{name}.dfs.core.windows.net" 
+    provider = f"fs.azure.account.oauth.provider.type.{name}.dfs.core.windows.net"
+    id = f"fs.azure.account.oauth2.client.id.{name}.dfs.core.windows.net"
+    secret = f"fs.azure.account.oauth2.client.secret.{name}.dfs.core.windows.net"
+    endpoint = f"fs.azure.account.oauth2.client.endpoint.{name}.dfs.core.windows.net"
+    conf_spec = [auth,provider,id,secret,endpoint]
+    return conf_spec
+
+
+
+
+# COMMAND ----------
+
 def legacy_del_conf(job_id, policy_id, attribute):
     jobs_spec = []
     new_jobs_spec = []

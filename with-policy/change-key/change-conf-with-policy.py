@@ -4,8 +4,8 @@
 # COMMAND ----------
 
 dbutils.widgets.text("policy_id","required")
-dbutils.widgets.text("attribute","required")
-dbutils.widgets.text("new_attribute","required")
+dbutils.widgets.text("conf","required")
+dbutils.widgets.text("new_conf","required")
 dbutils.widgets.dropdown("DEBUG","True", ["True", "False"])
 dbutils.widgets.dropdown("DRY_RUN","True", ["True", "False"])
 
@@ -13,8 +13,8 @@ dbutils.widgets.dropdown("DRY_RUN","True", ["True", "False"])
 # COMMAND ----------
 
 policy_id=dbutils.widgets.get("policy_id")
-attribute=dbutils.widgets.get("attribute")
-new_attribute=dbutils.widgets.get("new_attribute")
+conf=dbutils.widgets.get("conf")
+new_conf=dbutils.widgets.get("new_conf")
 DEBUG=dbutils.widgets.get("DEBUG")
 DRY_RUN=dbutils.widgets.get("DRY_RUN")
 
@@ -92,18 +92,52 @@ def find_vals(job_spec, conf_key):
             for x in find_vals(j, conf_key):
                 yield x
 
-def change_conf(job_spec, conf_key, new_conf_key):
-    vals = list(find_vals(job_spec, conf_key))
-    if vals:
-        old_val = vals[0]
-        job_spec_str = json.dumps(job_spec)
-        job_spec_str = job_spec_str.replace(str(conf_key), str(new_conf_key))
-        print (new_conf_key)
-        return json.loads(job_spec_str)
-    else:
-        if DEBUG:
-            print('DEBUG: No change in', conf_key)
-        return job_spec
+# def change_conf(job_spec, conf_key, new_conf_key):
+#     vals = list(find_vals(job_spec, conf_key))
+#     if vals:
+#         old_val = vals[0]
+#         job_spec_str = json.dumps(job_spec)
+#         job_spec_str = job_spec_str.replace(str(conf_key), str(new_conf_key))
+#         print (new_conf_key)
+#         return json.loads(job_spec_str)
+#     else:
+#         if DEBUG:
+#             print('DEBUG: No change in', conf_key)
+#         return job_spec
+
+def change_conf(job_spec, conf_key,new_conf_key):
+    if isinstance(job_spec, dict):
+        if isinstance(new, dict):
+            for key, value in obj.items():
+
+                new_key = key_transform(key)
+
+                if isinstance(value, dict):
+                    new[new_key] = {}
+                    _walk_json(value, new=new[new_key])
+
+                elif isinstance(value, list):
+                    new[new_key] = []
+                    for item in value:
+                        _walk_json(item, new=new[new_key])
+
+                else:  # take value as is
+                    new[new_key] = value
+
+            elif isinstance(new, list):
+                new.append(_walk_json(obj, new={}))
+
+    else:  # take object as is
+        new.append(obj)
+
+
+
+def update(job_spec, path, new_value):
+    obj_ptr = json
+    for key in path:
+        if key == path[-1]:
+            obj_ptr[key] = new_value
+        obj_ptr = obj_ptr[key]
 
 def update_job_spec(job_id, new_settings):
     api_url = f"{API_URL}/api/2.1/jobs/update"
@@ -251,6 +285,10 @@ def update_job(job_id, policy_id, attribute, new_attribute):
 
 # COMMAND ----------
 
+update_job('1056447186701149', policy_id, conf, new_conf)
+
+# COMMAND ----------
+
 from concurrent.futures import ThreadPoolExecutor
 
 from tqdm import tqdm
@@ -266,17 +304,11 @@ if __name__ == "__main__":
         futures = []
         #start = time()
         for job_id in job_ids:
-          args = [job_id, policy_id, attribute, new_attribute]
+          args = [job_id, policy_id, conf, new_conf]
           futures.append(executor.submit(update_job, *args))
         for future in futures:
           result = future.result()
           pbar.update(1)
-
-# COMMAND ----------
-
-job_ids = get_job_ids()
-for job_id in job_ids:
-  update_job(job_id, policy_id, attribute, new_attribute)
 
 # COMMAND ----------
 
