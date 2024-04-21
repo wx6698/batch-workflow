@@ -81,12 +81,21 @@ def add_vals(job_spec, conf_key, new_val):
         job_spec["new_cluster"].update(new_conf)
     return job_spec
 
-def del_val(job_spec, conf_key):
-    vals_conf = list(find_vals(job_spec, conf_key))
-    if (len(vals_conf)!=0):
-        job_spec["new_cluster"].pop(conf_key)
-        print ("new:",job_spec)
-    return job_spec
+# def del_val(job_spec, conf_key):
+#     vals_conf = list(find_vals(job_spec, conf_key))
+#     if (len(vals_conf)!=0):
+#         job_spec["new_cluster"].pop(conf_key)
+#         print ("new:",job_spec)
+#     return job_spec
+
+def del_val(job_spec, key):
+    if isinstance(job_spec, dict):
+        return {k: del_val(v, key) for k, v in job_spec.items() if k != key}
+
+    elif isinstance(job_spec, list):
+        return [del_val(element, key) for element in job_spec]
+    else:
+        return job_spec
 
 def update_job_spec(job_id, new_settings):
     api_url = f"{API_URL}/api/2.1/jobs/update"
@@ -401,18 +410,7 @@ def update_value(job_id, policy_id, attribute, new_value):
 
 # COMMAND ----------
 
-def update_job(job_id, policy_id, attribute):
-    job_spec = get_job_spec(job_id)
-    job_clusters = list(find_vals(job_spec, "job_clusters"))
-    existing_cluster_id = list(find_vals(job_spec, "existing_cluster_id"))
-    if len(existing_cluster_id)!=0 :
-        print(job_id,"use exist cluster",existing_cluster_id)
-    elif len(job_clusters)!=0 :
-        print(job_id,"is in new formate")
-        del_conf(job_id, policy_id, attribute)
-    else:
-        print(job_id,"is in legacy formate")
-        legacy_del_conf(job_id, policy_id, attribute)
+
 
 # COMMAND ----------
 
