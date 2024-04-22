@@ -88,14 +88,31 @@ def add_vals(job_spec, conf_key, new_val):
 #         print ("new:",job_spec)
 #     return job_spec
 
-def del_val(job_spec, key):
+def del_conf(job_spec, key):
     if isinstance(job_spec, dict):
-        return {k: del_val(v, key) for k, v in job_spec.items() if k != key}
+        return {k: del_conf(v, key) for k, v in job_spec.items() if k != key}
 
     elif isinstance(job_spec, list):
-        return [del_val(element, key) for element in job_spec]
+        return [del_conf(element, key) for element in job_spec]
     else:
         return job_spec
+    
+def change_conf(job_spec, old_key, new_key):
+    if not isinstance(job_spec, dict):
+        return job_spec
+
+    new_job_spec = {}
+    for key, value in job_spec.items():
+        if key == old_key:
+            new_job_spec[new_key] = value
+        elif isinstance(value, dict):
+            new_job_spec[key] = change_conf(value, old_key, new_key)
+        elif isinstance(value, list):
+            new_job_spec[key] = [change_conf(item, old_key, new_key) for item in value]
+        else:
+            new_job_spec[key] = value
+
+    return new_job_spec
 
 def update_job_spec(job_id, new_settings):
     api_url = f"{API_URL}/api/2.1/jobs/update"
@@ -145,15 +162,15 @@ def legacy_del_conf(job_id, policy_id, attribute):
     new_jobs_spec = []
     new_settings = {'new_cluster':new_jobs_spec}
     job_spec = get_job_spec(job_id)
-    vals = list(find_vals(job_spec, 'policy_id'))
-    if vals and vals.__contains__(policy_id):
+    val_policy = list(find_vals(job_spec, 'policy_id'))
+    if val_policy and val_policy.__contains__(policy_id):
         try:
             task = job_spec['settings']['tasks'][0]#
             vals_conf = list(find_vals(task, attribute))
             if len(vals_conf) !=0:
                 # new_conf = {attribute:value}
                 # job_spec["new_cluster"].update(new_conf)
-                new_task_spec = del_val(task, attribute)
+                new_task_spec = del_conf(task, attribute)
                 
                 if DEBUG:
                     print('DEBUG: Job ID: ', job_id)
@@ -170,7 +187,7 @@ def legacy_del_conf(job_id, policy_id, attribute):
                     else:
                         print('INFO: Updated job', job_id,"succeed")
             else:
-                print(job_id," already has the attribute in place ")
+                print(job_id," does not have",attribute,"in place ")
                 pass
 
             
@@ -199,11 +216,11 @@ def del_conf(job_id, policy_id, attribute):
       for cluster in job_spec['settings']['job_clusters']:
         vals_policy = list(find_vals(cluster, 'policy_id'))
         vals_conf = list(find_vals(cluster, attribute))
-        if (vals_policy and vals_policy[0]==policy_id):
-          new_cluster_spec = del_val(cluster, attribute)
+        if vals_policy and vals_policy[0]==policy_id and len(vals_conf)>0:
+          new_cluster_spec = del_conf(cluster, attribute)
           new_settings['job_clusters'].append(new_cluster_spec)
         else:
-          print(job_id," ",cluster['job_cluster_key'],": do not to change due to either the policy not configured or attribute already exist")
+          print(job_id," ",cluster['job_cluster_key'],": do not to change due to either the policy not configured or", attribute," does not exist")
           pass
 
       if DEBUG:
@@ -216,7 +233,6 @@ def del_conf(job_id, policy_id, attribute):
             print("new settings:",new_jobs_spec)
       else:
         updated = update_job_spec(job_id, new_settings)
-        print(new_settings)
         if updated.status_code != 200:
           print('ERROR: Updating job', job_id, updated.content)
         else:
@@ -425,8 +441,94 @@ def update_value(job_id, policy_id, attribute, new_value):
 
 # COMMAND ----------
 
+def legacy_update_conf(job_id, policy_id, attribute, new_attribute):
+    jobs_spec = []
+    new_jobs_spec = []
+    new_settings = {'new_cluster':new_jobs_spec}
+    job_spec = get_job_spec(job_id)
+    val_policy = list(find_vals(job_spec, 'policy_id'))
+    if (val_policy and val_policy[0]==policy_id):
+        try:
+            task = job_spec['settings']['tasks'][0]
+            vals_conf = list(find_vals(task, attribute))
+            if len(vals_conf) !=0:
+                new_task_spec = change_conf(task, attribute, new_attribute)
+                
+                if DEBUG:
+                    print('DEBUG: Job ID: ', job_id)
+                    print( {'new_cluster':new_task_spec['new_cluster']})
+                    recursive_compare(job_spec,  {'new_cluster':new_task_spec['new_cluster']})
+                if DRY_RUN:
+                    print('INFO: [Dry-run] Changes to job', job_id)
+                    print("new settings:", {'new_cluster':new_task_spec['new_cluster']})
+                else:
+                    updated = update_job_spec(job_id, {'new_cluster':new_task_spec['new_cluster']})
+                    if updated.status_code != 200:
+                        print('ERROR: Updating job', job_id, updated.content)
+                    else:
+                        print('INFO: Updated job', job_id,"succeed")
+            else:
+                print(job_id," does not have",attribute,"configure")
+                pass
 
+            
+
+        except NameError as error:
+            print(traceback.format_exc())
+            pass
+        except Exception as error:
+        #print ("find an error on: ",job_id,error,vals_policy)
+            print(traceback.format_exc())
+            pass
+    else:
+        print(job_id,": clusters do not configure",policy_id)
+        time.sleep(0.3)
 
 # COMMAND ----------
 
+def update_conf(job_id, policy_id, attribute, new_attribute):
+  jobs_spec = []
+  new_jobs_spec = []
+  new_job_spec = []
+  new_settings = {'job_clusters':new_jobs_spec}
+  job_spec = get_job_spec(job_id)
+  vals = list(find_vals(job_spec, 'policy_id'))
+  if (vals and vals[0]==policy_id):
+    try:
+      for cluster in job_spec['settings']['job_clusters']:
+        vals_policy = list(find_vals(cluster, 'policy_id'))
+        vals_conf = list(find_vals(cluster, attribute))
+        print(cluster['job_cluster_key'],":",vals_policy,vals_conf)
+        if (vals_policy and vals_policy[0]==policy_id and vals_conf):
+          new_job_spec = change_conf(cluster, attribute, new_attribute)
+          new_settings['job_clusters'].append(new_job_spec)
+        else:
+          print(job_id," ",cluster['job_cluster_key'],": do not configure policy ",policy_id,"or conf",attribute)
+          pass
+      
+      if DEBUG:
+            print('DEBUG: Job ID: ', job_id)
+            print(new_job_spec)
+            recursive_compare(job_spec, new_job_spec)
+      if DRY_RUN:
+            print('INFO: [Dry-run] Changes to job', job_id)
+            #recursive_compare(job_spec, new_job_spec)
+            print("new settings:",new_jobs_spec)
+      else:
+        updated = update_job_spec(job_id, new_settings)
+        if updated.status_code != 200:
+          print('ERROR: Updating job', job_id, updated.content)
+        else:
+          print('INFO: Updated job', job_id,"succeed")
 
+    except NameError as error:
+      print(traceback.format_exc())
+      pass
+    except Exception as error:
+      #print ("find an error on: ",job_id,error,vals_policy)
+      print(traceback.format_exc())
+      pass
+
+  else:
+    print(job_id,": clusters do not configure",policy_id)
+    time.sleep(0.3)
