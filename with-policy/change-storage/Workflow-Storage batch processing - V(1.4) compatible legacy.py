@@ -55,12 +55,12 @@ def update_job(job_id, policy_id, attribute, new_attribute):
 # COMMAND ----------
 
 
-storage_list = storage.split(",")
-print(storage_list)
-for storage in storage_list:         
-  exist = gen_storage_conf_v1(storage)
-  for old in exist:
-    update_job('58902140328941', policy_id, old, "spark.hadoop."+old)              
+# storage_list = storage.split(",")
+# print(storage_list)
+# for storage in storage_list:         
+#   exist = gen_storage_conf_v1(storage)
+#   for old in exist:
+#     update_job('686738920871883', policy_id, old, "spark.hadoop."+old)              
 
 # COMMAND ----------
 

@@ -482,7 +482,7 @@ def legacy_update_conf(job_id, policy_id, attribute, new_attribute):
             pass
     else:
         print(job_id,": clusters do not configure",policy_id)
-        time.sleep(0.3)
+        time.sleep(0.5)
 
 # COMMAND ----------
 
@@ -498,7 +498,6 @@ def update_conf(job_id, policy_id, attribute, new_attribute):
       for cluster in job_spec['settings']['job_clusters']:
         vals_policy = list(find_vals(cluster, 'policy_id'))
         vals_conf = list(find_vals(cluster, attribute))
-        print(cluster['job_cluster_key'],":",vals_policy,vals_conf)
         if (vals_policy and vals_policy[0]==policy_id and vals_conf):
           new_job_spec = change_conf(cluster, attribute, new_attribute)
           new_settings['job_clusters'].append(new_job_spec)
@@ -531,4 +530,4 @@ def update_conf(job_id, policy_id, attribute, new_attribute):
 
   else:
     print(job_id,": clusters do not configure",policy_id)
-    time.sleep(0.3)
+    time.sleep(0.5)
