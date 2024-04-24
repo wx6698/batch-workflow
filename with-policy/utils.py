@@ -205,7 +205,7 @@ def legacy_del_conf(job_id, policy_id, attribute):
 
 # COMMAND ----------
 
-def del_conf(job_id, policy_id, attribute):
+def new_del_conf(job_id, policy_id, attribute):
   jobs_spec = []
   new_jobs_spec = []
   new_settings = {'job_clusters':new_jobs_spec}

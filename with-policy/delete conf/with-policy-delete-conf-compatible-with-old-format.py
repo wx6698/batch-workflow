@@ -260,7 +260,7 @@ def update_job(job_id, policy_id, attribute):
         print(job_id,"use exist cluster",existing_cluster_id)
     elif len(job_clusters)!=0 :
         print(job_id,"is in new formate")
-        del_conf(job_id, policy_id, attribute)
+        new_del_conf(job_id, policy_id, attribute)
     else:
         print(job_id,"is in legacy formate")
         legacy_del_conf(job_id, policy_id, attribute)
