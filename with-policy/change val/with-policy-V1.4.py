@@ -1,4 +1,13 @@
 # Databricks notebook source
+# MAGIC %md 
+# MAGIC This notebook is design to change the job cluster configuration value based on the conf key and policy 
+# MAGIC
+# MAGIC To use it, you just need to provide the policy ID, the name of the cluster conf and the desired new value .
+# MAGIC
+# MAGIC Please run with Debug->true or DRY_RUN->True first to make sure the change is as you expected. 
+
+# COMMAND ----------
+
 # MAGIC %pip install jsonlines
 # MAGIC %pip install tqdm
 

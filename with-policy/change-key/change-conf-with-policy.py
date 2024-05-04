@@ -1,4 +1,13 @@
 # Databricks notebook source
+# MAGIC %md 
+# MAGIC This notebook is design to replace the job cluster conf key
+# MAGIC
+# MAGIC To use it, you just need to provide the policy ID, the name of the current conf key and the new conf key
+# MAGIC
+# MAGIC Please run with Debug->true or DRY_RUN->True first to make sure the change is as you expected. 
+
+# COMMAND ----------
+
 # MAGIC %pip install tqdm
 
 # COMMAND ----------

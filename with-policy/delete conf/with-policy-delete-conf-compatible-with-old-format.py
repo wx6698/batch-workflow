@@ -1,4 +1,15 @@
 # Databricks notebook source
+# MAGIC %md
+# MAGIC The notebook is design to delete a cluster configuration. 
+# MAGIC
+# MAGIC The notebook will find the job cluster based on the policy ID and then delete the cluster conf you put in attribute field. 
+# MAGIC
+# MAGIC If the cluster conf is not configured, then the cluster will be passed and no change will be done . 
+# MAGIC
+# MAGIC Please run with Debug->true or DRY_RUN->True first to make sure the change is as you expected. 
+
+# COMMAND ----------
+
 # MAGIC %pip install jsonlines
 # MAGIC %pip install tqdm
 

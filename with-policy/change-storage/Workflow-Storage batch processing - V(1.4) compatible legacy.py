@@ -1,4 +1,13 @@
 # Databricks notebook source
+# MAGIC %md 
+# MAGIC This notebook is design to add the spark.haoodp prefix to adls gen2 credentials configuration.
+# MAGIC
+# MAGIC To use it, you just need to provide the policy ID and the name of the Azure storage accounts seperate by ","
+# MAGIC
+# MAGIC Please run with Debug->true or DRY_RUN->True first to make sure the change is as you expected. 
+
+# COMMAND ----------
+
 # MAGIC %pip install tqdm
 # MAGIC
 
