@@ -51,8 +51,4 @@ dbutils.fs.cp('file:/tmp/test.json',path,True)
 
 # COMMAND ----------
 
-# MAGIC %fs ls /tmp/
-
-# COMMAND ----------
-
 
