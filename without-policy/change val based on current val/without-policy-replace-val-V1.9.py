@@ -111,16 +111,28 @@ def replace_nested_key(data, key, value):
     else:
         return data
 
-def change_vals(job_spec, conf_key, new_val, old_val):
-    vals = list(find_vals(job_spec, conf_key))
-    if vals: 
-        job_spec_str = json.dumps(job_spec)
-        job_spec_str = job_spec_str.replace(str(old_val), str(new_val))
-        return json.loads(job_spec_str)
-    else:
-        if DEBUG:
-            print('DEBUG: No change in', conf_key)
-        return job_spec
+# def change_vals(job_spec, conf_key, new_val, old_val):
+#     vals = list(find_vals(job_spec, conf_key))
+#     if vals: 
+#         job_spec_str = json.dumps(job_spec)
+#         job_spec_str = job_spec_str.replace(str(old_val), str(new_val))
+#         return json.loads(job_spec_str)
+#     else:
+#         if DEBUG:
+#             print('DEBUG: No change in', conf_key)
+#         return job_spec
+
+def change_vals(job_spec, conf_key, new_value, old_value):
+    for k, v in job_spec.items():
+        if k == conf_key and v==old_value:
+            job_spec[k] = new_value
+        elif isinstance(v, dict):
+            change_vals(v, conf_key, new_value,old_value)
+        elif isinstance(v, list):
+            for item in v:
+                if isinstance(item, dict):
+                    change_vals(item, conf_key, new_value,old_value)
+    return job_spec
 
 def update_job_spec(job_id, new_job_spec):
     api_url = f"{API_URL}/api/2.1/jobs/update"
@@ -157,7 +169,7 @@ def update_jobs(job_id, attribute, new_value,old_val):
     jobs_spec.append(job_spec)
     vals = list(find_vals(job_spec, attribute))
     if vals:
-        if old_value in vals[0]:          
+        if vals.__contains__(old_val):          
             new_job_spec = change_vals(job_spec, attribute, new_value,old_val)
             new_jobs_spec.append(new_job_spec)
             if DEBUG:
@@ -182,15 +194,6 @@ def update_jobs(job_id, attribute, new_value,old_val):
     # except:
     #     print("job id:",job_id,"failed to process")
     #     #print(job_spec)
-
-# COMMAND ----------
-
-# job_spec = get_job_spec('251897619430212')
-# vals = list(find_vals(job_spec, attribute))
-# if old_value in vals[0]:
-#     print("find",vals)
-# else:
-#     print(vals)
 
 # COMMAND ----------
 
